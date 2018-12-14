@@ -84,7 +84,7 @@ class Player {
                 // use the restart method in the first enemy to reset all
                 // make player visible in the water for 1/2 second
                 allEnemies[0].restart(-100);
-            }, 1000);
+            }, 500);
         };
     };
 
