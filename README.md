@@ -19,4 +19,15 @@ For detailed instructions on how to get started, check out this [guide](https://
 
 This repository is the starter code for _all_ Udacity students. Therefore, we most likely will not accept pull requests.
 
+## Game Rules
+
+The goal of the game is to reach the water while avoiding getting hit by the bugs. When the player reaches the water side the win count is increased. If you get hit you lose and the loss count is increased. The reset button resetds the counts.
+
+## Control
+
+Use the keyboard arrow keys to control the player movement direction.
+
+## Credits
+References: stackoverflow.com, w3schools.com, Youtube.com, developer.mozilla.org, css-tricks.com, Udacity lectures, javascript.info, geeksforgeeks.org, and other sites I found online.
+
 ## Changes by Cornelis Seevinck
