@@ -8,6 +8,7 @@ class Enemy {
         this.x = x;
         this.y = y;
         this.velocity = velocity;
+
         // The image/sprite for our enemies, this uses a helper
         this.sprite = 'images/enemy-bug.png';
     }
@@ -21,7 +22,7 @@ class Enemy {
         // all computers.
         this.x += (50 + this.velocity) * dt;
 
-        // See if this enemy is at the end of the row
+        // If this enemy is at the end of the row -> back to start
         if (this.x > 550) {
             this.restartRow(-100);
         };
@@ -58,18 +59,28 @@ class Enemy {
 // Requires update(), render() and handleInput() method.
 class Player {
     constructor(x, y) {
+
         // Variables applied to each of our instances go here,
         this.x = x;
         this.y = y;
+
         // The image/sprite for our player, this uses a helper
         this.sprite = 'images/char-boy.png';
+        this.wins = 0;
+        this.losses = 0;
+        this.turnEnded = false; // after a win or a loss
     }
 
     // Update the player's position, required method for game
     update() {
+
+        // Check for collision
         for (let enemy of allEnemies) {
             if (this.y === enemy.y && (enemy.x + 40 >= this.x && enemy.x - 40 <= this.x)) {
-                // alert('crash');
+                if (!this.turnEnded) {
+                    this.losses++;
+                    this.turnEnded = true;
+                }
                 allEnemies[0].restart(-100);
                 this.restart();
             }
@@ -78,9 +89,14 @@ class Player {
 
     // Check of player reached the water (Game win) 
     reachedWater() {
-        if (this.y < 100) {
+        if (this.y < 68) {
+            if (!this.turnEnded) {
+                this.wins++;
+                this.turnEnded = true;
+            }
             setTimeout(function() {
                 player.restart();
+
                 // use the restart method in the first enemy to reset all
                 // make player visible in the water for 1/2 second
                 allEnemies[0].restart(-100);
@@ -88,28 +104,42 @@ class Player {
         };
     };
 
-    // Restart game
+    // Restart Game
+    restartGame() {
+        this.wins = 0;
+        this.losses = 0;
+    };
+
+    // Restart turn
     restart() {
         this.x = 200;
         this.y = 400;
+        this.turnEnded = false;
     };
 
     // Draw the player on the screen, required method for game
     render() {
+
+        // store win and loss counts into dom
+        var x = document.getElementsByClassName("win-cnt");
+        x[0].innerHTML = this.wins;
+        var x = document.getElementsByClassName("loss-cnt");
+        x[0].innerHTML = this.losses;
+
         ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
     };
 
     // HandleInput method - ensure player stays on the canvas & 
-    // don't allow player to move if its in the water
+    // don't allow player to move if its in the water (turnEnded)
     handleInput(key) {
         switch (key) {
             case 'left':
-                if ((this.x > 50) && (this.y > 70)) {
+                if ((this.x > 50) && !this.turnEnded) {
                     this.x -= 100;
                 }
                 break;
             case 'right':
-                if ((this.x < 350) && (this.y > 70)) {
+                if ((this.x < 350) && !this.turnEnded) {
                     this.x += 100;
                 }
                 break;
@@ -121,7 +151,7 @@ class Player {
                 this.reachedWater();
                 break;
             case 'down':
-                if ((this.y < 350) && (this.y > 70)) {
+                if ((this.y < 350) && !this.turnEnded) {
                     this.y += 83;
                 }
                 break;
