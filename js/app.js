@@ -1,25 +1,26 @@
 // Declare enemies and Player
 let allEnemies = [];
 let player = {};
+const speedInc = 25; // increase factor for speed (levels)
 
 /**
- * Enemies our player must avoid
+ * Enemies player must avoid
  *
  * @class Enemy
  */
 class Enemy {
     /**
-     * Creates an instance of Enemy.
+     * Creates an instance of Enemy
      * @param {*} x - x coordinate of enemy
      * @param {*} y - y coordinate of enemy
-     * @param {*} velocity for the emeny
+     * @param {*} speed - initial speed for the emeny
      * @memberof Enemy
      */
-    constructor(x, y, velocity) {
+    constructor(x, y, speed) {
         // Variables applied to each of our instances go here,
         this.x = x;
         this.y = y;
-        this.velocity = velocity;
+        this.speed = speed;
 
         // The image/sprite for our enemies, this uses a helper
         this.sprite = 'images/enemy-bug.png';
@@ -35,11 +36,13 @@ class Enemy {
 
         // Multiply any movement by the dt parameter
         // which will ensure the game runs at the same speed for all computers
-        this.x += (50 + this.velocity) * dt;
+        // level * speedInc increases the speed after each win
+        this.x += (50 + (player.level * speedInc) + this.speed) * dt;
+
 
         // If this enemy is at the end of the row -> back to start
         if (this.x > 550) {
-            this.restartRow(-100);
+            this.resetRow(-100);
         };
     };
 
@@ -53,22 +56,14 @@ class Enemy {
     };
 
     /**
-     * Restart game row - all the ememies
+     * Reset game row for one ememy & get speed for its next run
      *
+     * @param {*} x - the row to reset
      * @memberof Enemy
      */
-    restartRow(x) {
+    resetRow(x) {
         this.x = x;
-        this.getVelocity(); // get velocity for next run
-    };
-
-    /**
-     * Get new random velocity
-     *
-     * @memberof Enemy
-     */
-    getVelocity() {
-        this.velocity = 90 + Math.floor(Math.random() * 500);
+        this.speed = 90 + Math.floor(Math.random() * 500);
     };
 };
 
@@ -86,13 +81,14 @@ class Player {
      */
     constructor(x, y) {
 
-        // Variables applied to each of our instances go here,
+        // Variables applied to player go here
         this.x = x;
         this.y = y;
-        this.sprite = 'images/char-boy.png'; // The image/sprite for our player, this uses a helper
+        this.sprite = 'images/char-boy.png'; // The image/sprite for player
         this.wins = 0;
         this.losses = 0;
-        this.turnEnded = false; // after a win or a loss
+        this.level = 0; // level 0 and normal speed
+        this.turnEnded = false; // used to ignore keystrokes while player swims
     };
 
     /**
@@ -102,7 +98,9 @@ class Player {
      */
     update() {
         // Don't do update if we have reached the water
-        if (this.turnEnded) { return; };
+        if (this.turnEnded) {
+            return;
+        };
 
         // Check for collision
         for (let enemy of allEnemies) {
@@ -117,6 +115,7 @@ class Player {
         // If we just found a collition - reset all ememy and player positions
         if (this.turnEnded) {
             this.restartTurn();
+            this.level = 0; // back to level 0 and normal speed
         };
     };
 
@@ -129,8 +128,9 @@ class Player {
         if (this.y < 68) {
             this.wins++;
             this.turnEnded = true;
+            this.level++; // increase level & enemy speed
 
-            // player reached the water - y coordinate will show the player 
+            // player reached the water - will show the player 
             // in the water for 300ms - setTimeout to facilitate this
             setTimeout(() => {
                 this.restartTurn();
@@ -140,6 +140,7 @@ class Player {
 
     /**
      * Restart Game - this happens when the game reset button is clicked
+     * Reset the player and ememy positions and all the counts and levels 
      *
      * @memberof Player
      */
@@ -147,26 +148,27 @@ class Player {
         this.restartTurn();
         this.wins = 0;
         this.losses = 0;
+        this.level = 0; // back to level 0 and normal speed
     };
 
     /**
-     * restartTurn - Called when the player has reached the water
+     * restartTurn - called when the player has reached the water
      * or when a collision has accurred. 
      * Reset enemy and player positions. 
      *
      * @memberof Player
      */
     restartTurn() {
-        this.x = 200;
-        this.y = 400;
+        this.x = 200; // reset player x
+        this.y = 400; // reset player y
         allEnemies.forEach(function(enemy) {
-            enemy.restartRow(-100);
+            enemy.resetRow(-100);
         });
         this.turnEnded = false; // allow keystrokes again
     };
 
     /**
-     * Draw the player on the screen
+     * Draw the player on the screen & update score counts
      *
      * @memberof Player
      */
@@ -175,6 +177,7 @@ class Player {
         // Store win and loss counts into dom elements
         document.getElementById("win-cnt").innerHTML = this.wins;
         document.getElementById("loss-cnt").innerHTML = this.losses;
+        document.getElementById("level-num").innerHTML = this.level;
 
         ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
     };
@@ -187,7 +190,9 @@ class Player {
      * @memberof Player
      */
     handleInput(key) {
-        if (this.turnEnded) { return; }; // ignore keystrokes while previous turn finishes
+        if (this.turnEnded) {
+            return;
+        }; // ignore keystrokes while previous turn finishes
         switch (key) {
             case 'left':
                 if (this.x > 50) {
@@ -204,7 +209,7 @@ class Player {
                     this.y -= 83;
                 };
 
-                // See if we reached water (game win)
+                // Process "win" if we reached water
                 this.reachedWater();
                 break;
             case 'down':
@@ -223,11 +228,15 @@ class Player {
  *  Place the player object in a variable called player
  */
 player = new Player(200, 400);
-allEnemies = [new Enemy(-50, 68, 7000), new Enemy(-50, 151, 9000), new Enemy(-50, 234, 8000)];
+allEnemies = [
+    new Enemy(-100, 68, 7000),
+    new Enemy(-100, 151, 9000),
+    new Enemy(-100, 234, 8000)
+];
 
 /*
  * This listens for key presses and sends the keys to your
- * Player.handleInput() method.
+ * player.handleInput() method.
  */
 document.addEventListener('keyup', function(e) {
     let allowedKeys = {
