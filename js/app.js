@@ -1,19 +1,25 @@
 // Declare enemies and Player
 let allEnemies = [];
 let player = {};
+let barrier = {};
 
 // Constants for the game
 const canvasLeft = 0; // left side of canvas
 const canvasRight = 400; // right side of canvas
+
 const playerStartx = 200; // player start x coordinate
 const playerStarty = 366; // player start y coordinate
-const playerVertMov = 83; // player vertical movement adjustment (same as enemyRowDepth)
-const enemyRowDepth = 83; // distance between enemy rows
 const playerHorzMov = 100; // player horizontal movement adjustment
+const playerVertMov = 83; // player vertical movement adjustment (= enemyRowDepth)
+
+const enemyRowDepth = 83; // distance between enemy rows
 const enemyStartx = -100; // enemy start x coordinate
-const enemyOverEndx = 100; // enemy end x coordinate beyond canvas before wrap
+const enemyOverEndx = 100; // enemy end x coordinate beyond canvas
 const enemyStarty = 34; // enemy start y coordinate
-const speedInc = 25; // increase factor for speed (levels)
+
+const barrierStartx = -100; // barrier start x coordinate
+const barrierOverEndx = 100; // barrier end x coordinate beyond canvas
+const barrierStarty = 34 + 83; //  barrier start y coordinate
 
 /**
  * Enemies Class - player must avoid these
@@ -34,9 +40,9 @@ class Enemy {
         this.y = y;
         this.speed = speed;
 
-        // The image/sprite for our enemies, this uses a helper
+        // The image/sprite for our enemies
         this.sprite = 'images/enemy-bug.png';
-    };
+    }
 
     /**
      * Update the enemy's position
@@ -49,14 +55,13 @@ class Enemy {
         // Multiply any movement by the dt parameter which ensures
         // the game runs at the same speed for all computers
         // level * speedInc increases the speed after each level win
-        this.x += (50 + (player.level * speedInc) + this.speed) * dt;
-
+        this.x += this.speed * dt;
 
         // If this enemy is at the end of the row -> back to start
         if (this.x > canvasRight + enemyOverEndx) {
             this.resetRow(enemyStartx);
         };
-    };
+    }
 
     /**
      * Draw the enemy on the screen
@@ -65,7 +70,7 @@ class Enemy {
      */
     render() {
         ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
-    };
+    }
 
     /**
      * Reset game row for one ememy & calculate speed for its next run
@@ -75,9 +80,78 @@ class Enemy {
      */
     resetRow(x) {
         this.x = x;
-        this.speed = 90 + Math.floor(Math.random() * 500);
+        this.speed = Math.floor((Math.random() * 200) + 130) * ((player.level + 6) / 6);
     };
-};
+}
+
+/**
+ * Barrier Class - player must go round these
+ *
+ * @class Barrier
+ */
+class Barrier {
+    /**
+     * Creates an instance of Barrier
+     * @param {*} x - x coordinate of barrier
+     * @param {*} y - y coordinate of barrier
+     * @memberof Barrier
+     */
+    constructor(x, y) {
+        // Variables for each of instance of barrier
+        this.x = x;
+        this.y = y;
+        this.speed = 1 + Math.floor(Math.random() * 5); // calculate barrier speed for next turn
+        this.barrierRight = true; // barrier will start moving to the right
+        this.stopBarrier = false; // after barrier is hit - stop it from moving for the rest of the turn
+
+        // The image/sprite for barrier, this uses a helper
+        this.sprite = 'images/Stop.png';
+    }
+
+    /**
+     * Update the barrier's position
+     *
+     * @param {*} dt - dt, a time delta between ticks
+     * @memberof Barrier
+     */
+    update(dt) {
+
+        // Multiply any movement by the dt parameter which ensures
+        // the game runs at the same speed for all computers
+        // if we are above level 2 then activate the barrier 
+        if (this.stopBarrier) {
+            return;
+        }; // don't let barrier move after its hit (for this turn)
+        if (player.level > 2) {
+            if (this.barrierRight) { // if barrier is going right 
+                if (this.x <= canvasRight + barrierOverEndx) { // not at end yet
+                    this.x += 1 + this.speed * dt * 100;
+                } else {
+                    this.barrierRight = false; // at end - go left now
+                };
+            } else if (this.x >= canvasLeft + barrierStartx) { // if going left & not at end yet
+                this.x -= 1 + this.speed * dt * 100;
+            } else {
+                this.barrierRight = true; // at end - go left now
+            };
+
+            // here if level is too low for barrier - set barrier x off the screen
+        } else {
+            this.x = canvasLeft + barrierStartx;
+        };
+    }
+
+    /**
+     * Draw the barrier on the screen
+     *
+     * @memberof Barrier
+     */
+    render() {
+        // if (this.stopBarrier) {
+        ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
+        // };
+    }
+}
 
 /**
  * Player Class
@@ -99,9 +173,9 @@ class Player {
         this.sprite = 'images/char-boy.png'; // The image/sprite for player
         this.wins = 0;
         this.losses = 0;
-        this.level = 0; // level 0 and normal speed
+        this.level = 1; // level 1 and normal speed
         this.turnEnded = false; // used to ignore keystrokes while player swims
-    };
+    }
 
     /**
      * Update the player's position
@@ -127,9 +201,9 @@ class Player {
         // If we just found a collision - reset all ememy and player positions
         if (this.turnEnded) {
             this.restartTurn();
-            this.level = 0; // back to level 0 and normal speed
+            this.level = 1; // back to level 1 and normal speed
         };
-    };
+    }
 
     /**
      * Check if player reached the water (level win)
@@ -148,7 +222,21 @@ class Player {
                 this.restartTurn();
             }, 300);
         };
-    };
+    }
+
+    /**
+     * Check if player is barred by the barrier
+     *
+     * @returns true if barred
+     * @memberof Player
+     */
+    Barred() {
+        if (this.y === barrier.y && (barrier.x + 40 >= this.x && barrier.x - 40 <= this.x)) {
+            barrier.speed = 0;
+            barrier.stopBarrier = true;
+            return true;
+        };
+    }
 
     /**
      * Restart Game - this happens when the game reset button is clicked
@@ -159,9 +247,9 @@ class Player {
     restartGame() {
         this.wins = 0;
         this.losses = 0;
-        this.level = 0; // back to level 0 and normal speed
+        this.level = 1; // back to level 1 and normal speed
         this.restartTurn();
-    };
+    }
 
     /**
      * restartTurn - called when the player reached the water or on collision
@@ -172,11 +260,13 @@ class Player {
     restartTurn() {
         this.x = playerStartx; // reset player x
         this.y = playerStarty; // reset player y
-        allEnemies.forEach(function(enemy) {
-            enemy.resetRow(enemyStartx);
-        });
+        // allEnemies.forEach(function(enemy) {
+        //     enemy.resetRow(enemyStartx);
+        // });
+        barrier.speed = 1 + Math.floor(Math.random() * 5); // calculate barrier speed for next turn
+        barrier.stopBarrier = false; // allow barrier to move again
         this.turnEnded = false; // allow keystrokes again
-    };
+    }
 
     /**
      * Draw the player on the screen & update score counts
@@ -191,7 +281,7 @@ class Player {
         document.getElementById("level-num").innerHTML = this.level;
 
         ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
-    };
+    }
 
     /**
      * HandleInput method - ensure player stays on the canvas &
@@ -216,6 +306,10 @@ class Player {
                 };
                 break;
             case 'up':
+                // if collition with barrier - don't allow movement
+                if (this.Barred()) {
+                    return;
+                };
                 if (this.y >= enemyStarty) {
                     this.y -= playerVertMov;
                 };
@@ -231,19 +325,21 @@ class Player {
             default:
         };
     };
-};
+}
 
 /**
  *  Now instantiate objects.
- *  Place all enemy objects in an array called allEnemies
  *  Place the player object in a variable called player
+ *  Place all enemy objects in an array called allEnemies
+ *  Place the barrier object in a variable called barrier
  */
 player = new Player(playerStartx, playerStarty);
 allEnemies = [
-    new Enemy(enemyStartx, enemyStarty, 7000),
-    new Enemy(enemyStartx, enemyStarty + enemyRowDepth, 9000),
-    new Enemy(enemyStartx, enemyStarty + (enemyRowDepth * 2), 8000)
+    new Enemy(enemyStartx, enemyStarty, Math.floor((Math.random() * 320) + 240)),
+    new Enemy(enemyStartx, enemyStarty + enemyRowDepth, Math.floor((Math.random() * 240) + 180)),
+    new Enemy(enemyStartx, enemyStarty + (enemyRowDepth * 2), Math.floor((Math.random() * 150) + 100))
 ];
+barrier = new Barrier(canvasLeft + barrierStartx, barrierStarty);
 
 /*
  * This listens for key presses and sends the keys to your
