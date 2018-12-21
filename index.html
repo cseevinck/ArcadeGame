@@ -11,15 +11,32 @@
     <div class="score-header">
         <div class="wins">WINS</div>
         <div class="win-cnt" id="win-cnt">0</div>
-        <div class="losses">LOSSES</div>
-        <div class="loss-cnt" id="loss-cnt">0</div>
+        <div class="lives">LIVES</div>
+        <div class="life-cnt" id="life-cnt">0</div>
+        <div class="score">SCORE</div>
+        <div class="score-cnt" id="score-cnt">0</div>
         <div class="level">LEVEL</div>
         <div class="level-num" id="level-num">0</div>
         <div class="buttons">
             <button type="button" class="button" onclick="player.restartGame()">Reset Game</button>
         </div>
     </div>
-    <div id="canvas-wrapper "></div>
+
+    <div class="popupBg hide" id="popupBg" onclick="toggleHide('.popupBg')">
+        <div class="popup">
+            <div class="game-done">
+                all lives done
+            </div>
+            <div class="popup-score" id="popup-score">
+                score will be inserted here
+            </div>
+            <div class="try-again">
+                Click anywhere to try again
+            </div>
+        </div>
+    </div>
+
+    <div id=" canvas-wrapper "></div>
     <script src="js/resources.js "></script>
     <script src="js/app.js "></script>
     <script src="js/engine.js "></script>

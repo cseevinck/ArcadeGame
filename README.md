@@ -21,7 +21,11 @@ This repository is the starter code for _all_ Udacity students. Therefore, we mo
 
 ## Game Rules
 
-The goal of the game is to reach the water while avoiding getting hit by the bugs. When the player reaches the water the win count is increased. This also increases the level number and also the speed of the bugs. When you get to level 2 you will see a barrier that moves accross the screen. this barrier will stop your progress. If you get hit by a bug. you loose and the loss count is increased and the level and speed is reset. The reset button resets the counts and level.
+1. The goal of the game is to reach the water while avoiding getting hit by the bugs. 2. When the player reaches the water the win count and the level is increased. As levels increase, the speed if the bugs is increased. The score is increased by 2. 
+3. When you get to level 2 you will see a barrier that moves accross the screen. This barrier will stop your progress and should be navigated around.
+4. When you get to level 3 you will see jewels randomly placed on the screen. Hitting these jewels will earn 1 point. 
+5. If you collide with a bug the lives count is decreased from 5 down and the level is reset to 1. 
+6. The reset button resets the counts and level indicator.
 
 ## Control
 

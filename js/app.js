@@ -1,25 +1,20 @@
-// Declare enemies and Player
+// Declare enemies, barrier, jewels and player
 let allEnemies = [];
 let player = {};
 let barrier = {};
+let allJewels = [];
 
 // Constants for the game
 const canvasLeft = 0; // left side of canvas
 const canvasRight = 400; // right side of canvas
+const firstRow = 34; // first row position
+const rowDepth = 83; // distance between rows
+const columnWidth = 100; // width of columns
 
 const playerStartx = 200; // player start x coordinate
 const playerStarty = 366; // player start y coordinate
-const playerHorzMov = 100; // player horizontal movement adjustment
-const playerVertMov = 83; // player vertical movement adjustment (= enemyRowDepth)
 
-const enemyRowDepth = 83; // distance between enemy rows
-const enemyStartx = -100; // enemy start x coordinate
-const enemyOverEndx = 100; // enemy end x coordinate beyond canvas
-const enemyStarty = 34; // enemy start y coordinate
-
-const barrierStartx = -100; // barrier start x coordinate
-const barrierOverEndx = 100; // barrier end x coordinate beyond canvas
-const barrierStarty = 34 + 83; //  barrier start y coordinate
+const barrierStarty = firstRow + rowDepth; //  barrier start y coordinate
 
 /**
  * Enemies Class - player must avoid these
@@ -58,8 +53,8 @@ class Enemy {
         this.x += this.speed * dt;
 
         // If this enemy is at the end of the row -> back to start
-        if (this.x > canvasRight + enemyOverEndx) {
-            this.resetRow(enemyStartx);
+        if (this.x > canvasRight + columnWidth) {
+            this.resetRow(-columnWidth);
         };
     }
 
@@ -83,7 +78,6 @@ class Enemy {
         this.speed = Math.floor((Math.random() * 200) + 130) * ((player.level + 6) / 6);
     };
 }
-
 /**
  * Barrier Class - player must go round these
  *
@@ -97,6 +91,7 @@ class Barrier {
      * @memberof Barrier
      */
     constructor(x, y) {
+
         // Variables for each of instance of barrier
         this.x = x;
         this.y = y;
@@ -124,12 +119,12 @@ class Barrier {
         }; // don't let barrier move after its hit (for this turn)
         if (player.level > 2) {
             if (this.barrierRight) { // if barrier is going right 
-                if (this.x <= canvasRight + barrierOverEndx) { // not at end yet
+                if (this.x <= canvasRight + columnWidth) { // not at end yet
                     this.x += 1 + this.speed * dt * 100;
                 } else {
                     this.barrierRight = false; // at end - go left now
                 };
-            } else if (this.x >= canvasLeft + barrierStartx) { // if going left & not at end yet
+            } else if (this.x >= (canvasLeft - columnWidth)) { // if going left & not at end yet
                 this.x -= 1 + this.speed * dt * 100;
             } else {
                 this.barrierRight = true; // at end - go left now
@@ -137,7 +132,7 @@ class Barrier {
 
             // here if level is too low for barrier - set barrier x off the screen
         } else {
-            this.x = canvasLeft + barrierStartx;
+            this.x = (canvasLeft - columnWidth);
         };
     }
 
@@ -147,9 +142,68 @@ class Barrier {
      * @memberof Barrier
      */
     render() {
-        // if (this.stopBarrier) {
         ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
-        // };
+    }
+}
+
+/**
+ * Jewel Class - player can add to score
+ *
+ * @class Jewel
+ */
+class Jewel {
+    /**
+     * Creates an instance of Jewel
+     * @memberof Jewel
+     */
+    constructor(sprite, y) {
+
+        // Variables for each of instance of Jewel
+        this.x = (canvasLeft - columnWidth)
+        this.y = y;
+        this.sprite = sprite;
+        this.jewelAlive = false; // we need to place a new jewel
+    }
+
+    /**
+     * Update the Jewel's position
+     *
+     * @memberof Jewel
+     */
+    update() {
+
+        // if we are above level 3 then activate the jewels
+        if (player.level > 3) {
+            if (!this.jewelAlive) {
+                this.x = canvasLeft + (this.randomX() * columnWidth);
+                this.jewelAlive = true;
+            }
+            // see if we hit a jewel
+            if ((this.y === player.y) && (this.x === player.x)) {
+                player.score++; // add to score
+                this.jewelAlive = false;
+            };
+        } else {
+            this.x = (canvasLeft - columnWidth);
+        };
+    }
+
+    /**
+     * Draw the Jewel on the screen
+     *
+     * @memberof Jewel
+     */
+    render() {
+        ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
+    };
+
+    /**
+     * Get random number between 0 & 4 (inclusive) for x coordinate
+     *
+     * @memberof Jewel
+     */
+    randomX() {
+        return Math.floor((Math.random() * 4) + 0);
     }
 }
 
@@ -172,9 +226,11 @@ class Player {
         this.y = y;
         this.sprite = 'images/char-boy.png'; // The image/sprite for player
         this.wins = 0;
-        this.losses = 0;
+        this.lives = 5; // start with 5 lives
+        this.score = 0; // win = 2 points, jewel = 1 point
         this.level = 1; // level 1 and normal speed
         this.turnEnded = false; // used to ignore keystrokes while player swims
+        this.modalDisplay = false; // if true the reset modal is up - ignore all keystrokes
     }
 
     /**
@@ -183,9 +239,9 @@ class Player {
      * @memberof Player
      */
     update() {
+
         // Don't do update if we have reached the water. Want the player to
         // render for a short time - looks cool
-
         if (this.turnEnded) {
             return;
         };
@@ -193,7 +249,14 @@ class Player {
         // Check for collision
         for (let enemy of allEnemies) {
             if (this.y === enemy.y && (enemy.x + 40 >= this.x && enemy.x - 40 <= this.x)) {
-                this.losses++;
+                this.lives--;
+                if (this.lives == 0) {
+
+                    // save high score in modal
+                    document.getElementById("popup-score").innerHTML = 'Your Score: ' + this.score;
+                    toggleHide('.popupBg');
+                    this.restartGame();
+                }
                 this.turnEnded = true;
             };
         };
@@ -211,8 +274,9 @@ class Player {
      * @memberof Player
      */
     checkForAndDoWin() {
-        if (this.y < enemyStarty) {
+        if (this.y < firstRow) {
             this.wins++;
+            this.score += 2;
             this.turnEnded = true;
             this.level++; // increase level & enemy speed
 
@@ -246,7 +310,10 @@ class Player {
      */
     restartGame() {
         this.wins = 0;
-        this.losses = 0;
+        this.score = 0;
+        this.lives = 5;
+        allJewels.forEach(jewel => jewel.jewelAlive = false);
+
         this.level = 1; // back to level 1 and normal speed
         this.restartTurn();
     }
@@ -260,9 +327,7 @@ class Player {
     restartTurn() {
         this.x = playerStartx; // reset player x
         this.y = playerStarty; // reset player y
-        // allEnemies.forEach(function(enemy) {
-        //     enemy.resetRow(enemyStartx);
-        // });
+        allJewels.forEach(jewel => jewel.jewelAlive = false);
         barrier.speed = 1 + Math.floor(Math.random() * 5); // calculate barrier speed for next turn
         barrier.stopBarrier = false; // allow barrier to move again
         this.turnEnded = false; // allow keystrokes again
@@ -277,8 +342,9 @@ class Player {
 
         // Store win and loss counts & level into dom elements
         document.getElementById("win-cnt").innerHTML = this.wins;
-        document.getElementById("loss-cnt").innerHTML = this.losses;
+        document.getElementById("life-cnt").innerHTML = this.lives;
         document.getElementById("level-num").innerHTML = this.level;
+        document.getElementById("score-cnt").innerHTML = this.score;
 
         ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
     }
@@ -291,18 +357,18 @@ class Player {
      * @memberof Player
      */
     handleInput(key) {
-        if (this.turnEnded) {
+        if (this.turnEnded || this.modalDisplay) {
             return;
         }; // ignore keystrokes while previous turn finishes
         switch (key) {
             case 'left':
                 if (this.x > canvasLeft) { // left edge of canvas
-                    this.x -= playerHorzMov;
+                    this.x -= columnWidth;
                 };
                 break;
             case 'right':
                 if (this.x < canvasRight) { // right edge of canvas
-                    this.x += playerHorzMov;
+                    this.x += columnWidth;
                 };
                 break;
             case 'up':
@@ -310,8 +376,8 @@ class Player {
                 if (this.Barred()) {
                     return;
                 };
-                if (this.y >= enemyStarty) {
-                    this.y -= playerVertMov;
+                if (this.y >= firstRow) {
+                    this.y -= rowDepth;
                 };
 
                 // Process "win" if we reached water
@@ -319,7 +385,7 @@ class Player {
                 break;
             case 'down':
                 if (this.y < playerStarty) {
-                    this.y += playerVertMov;
+                    this.y += rowDepth;
                 };
                 break;
             default:
@@ -335,17 +401,32 @@ class Player {
  */
 player = new Player(playerStartx, playerStarty);
 allEnemies = [
-    new Enemy(enemyStartx, enemyStarty, Math.floor((Math.random() * 320) + 240)),
-    new Enemy(enemyStartx, enemyStarty + enemyRowDepth, Math.floor((Math.random() * 240) + 180)),
-    new Enemy(enemyStartx, enemyStarty + (enemyRowDepth * 2), Math.floor((Math.random() * 150) + 100))
+    new Enemy(-columnWidth, firstRow, Math.floor((Math.random() * 320) + 240)),
+    new Enemy(-columnWidth, firstRow + rowDepth, Math.floor((Math.random() * 240) + 180)),
+    new Enemy(-columnWidth, firstRow + (rowDepth * 2), Math.floor((Math.random() * 100) + 500))
 ];
-barrier = new Barrier(canvasLeft + barrierStartx, barrierStarty);
+barrier = new Barrier(canvasLeft - columnWidth, barrierStarty);
+
+let jewelArray = [
+    'images/Gem Orange.png',
+    'images/Gem Green.png',
+    'images/Gem Blue.png'
+];
+
+// sort the jewels randomly
+jewelArray.sort(() => { return 0.5 - Math.random() });
+
+allJewels = [
+    new Jewel(jewelArray[0], firstRow),
+    new Jewel(jewelArray[1], firstRow + rowDepth),
+    new Jewel(jewelArray[2], firstRow + (rowDepth * 2))
+];
 
 /*
  * This listens for key presses and sends the keys to your
  * player.handleInput() method.
  */
-document.addEventListener('keyup', function(e) {
+document.addEventListener('keyup', e => {
     let allowedKeys = {
         37: 'left',
         38: 'up',
@@ -354,3 +435,14 @@ document.addEventListener('keyup', function(e) {
     };
     player.handleInput(allowedKeys[e.keyCode]);
 });
+
+/*
+ * Toggle hide attribute on element for popup
+ * Set modalDisplay to true or false to ignore or allow keystrokes
+ * @returns the function
+ */
+window.toggleHide = function(q) {
+    player.modalDisplay =
+        (document.getElementById("popupBg").classList.contains('hide')) ? true : false;
+    document.querySelector(q).classList.toggle('hide')
+};

@@ -12,7 +12,7 @@ body {
 
 .score-header {
     display: flex;
-    /* justify-content: center; */
+    justify-content: center;
     align-items: center;
     width: 505px;
     margin: 0 auto;
@@ -36,15 +36,26 @@ body {
     width: 40%;
 }
 
-.losses {
+.lives {
     width: 20%;
     text-align: right;
     padding-right: 10px;
 }
 
-.loss-cnt {
+.life-cnt {
     width: 10%;
     text-align: left;
+}
+
+.score-cnt {
+    width: 10%;
+    text-align: left;
+}
+
+.score {
+    width: 20%;
+    text-align: right;
+    padding-right: 10px;
 }
 
 .level {
@@ -75,4 +86,54 @@ body {
 
 .button:focus {
     outline: 0;
+}
+
+
+/* popup  */
+
+.popupBg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: flex;
+    min-height: 100vh;
+    width: 100vw;
+    justify-content: center;
+    cursor: default;
+    background: rgba(253, 253, 253, 0.9)
+}
+
+.popup {
+    width: 400px;
+    height: 200px;
+    font-family: "Raleway", sans-serif;
+    font-weight: 800;
+    border: 3px solid black;
+    background: rgb(236, 236, 187);
+    margin: 40px;
+}
+
+.game-done {
+    position: relative;
+    text-transform: uppercase;
+    margin-top: 40px;
+    font-size: 1.5em;
+    align-items: center;
+}
+
+.popup-score {
+    font-size: 1.2em;
+    position: relative;
+    align-items: center;
+}
+
+.try-again {
+    font-size: 1.2em;
+    position: relative;
+    margin-top: 70px;
+    align-items: center;
+}
+
+.hide {
+    display: none;
 }
